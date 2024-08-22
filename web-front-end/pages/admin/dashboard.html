@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        #users-table {
+            width: 100%;
+            margin: 20px 0;
+            border-collapse: collapse;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        #users-table th, #users-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        #users-table th {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        #users-table tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        #users-table td:last-child {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button.edit {
+            background-color: #2196F3;
+            color: white;
+        }
+
+        button.delete {
+            background-color: #f44336;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Admin Dashboard</h1>
+    <table id="users-table" border="1">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Users will be loaded here -->
+        </tbody>
+    </table>
+
+    <script>
+        async function loadUsers() {
+            const response = await fetch('http://127.0.0.1:4001/admin/user', {
+                credentials: "include"
+            });
+            const result = await response.json();
+            const users = result?.payload;
+            if (!users) {
+                alert('Failed to load users');
+                window.location.href = '../index.html';
+                return;
+            }
+            const tbody = document.getElementById('users-table').getElementsByTagName('tbody')[0];
+            tbody.innerHTML = '';
+            users.forEach(user => {
+                const row = tbody.insertRow();
+                row.insertCell(0).innerText = user.id;
+                row.insertCell(1).innerText = user.username;
+                row.insertCell(2).innerText = user.email;
+                const actionsCell = row.insertCell(3);
+                
+                const editButton = document.createElement('button');
+                editButton.className = 'edit';
+                editButton.innerText = 'Edit';
+                editButton.onclick = () => {
+                    window.location.href = `./user.html?user_id=${user.id}`;
+                };
+                actionsCell.appendChild(editButton);
+
+                const deleteButton = document.createElement('button');
+                deleteButton.className = 'delete';
+                deleteButton.innerText = 'Delete';
+                deleteButton.onclick = () => deleteUser(user.username);
+                actionsCell.appendChild(deleteButton);
+            });
+        }
+
+        async function deleteUser(username) {
+            if (confirm(`Are you sure you want to delete user "${username}"?`)) {
+                const response = await fetch(`http://127.0.0.1:4001/auth/delete/user`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ username }),
+                    credentials: "include"
+                });
+                
+                const result = await response.json();
+                if (result.ok) {
+                    alert(`User "${username}" has been deleted successfully.`);
+                    loadUsers(); // Reload the user list
+                } else {
+                    alert(`Failed to delete user: ${result.message}`);
+                }
+            }
+        }
+
+        loadUsers();
+    </script>
+</body>
+</html>

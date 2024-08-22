@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile</title>
+    <link rel="stylesheet" href="../styles/styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        form {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input[type="text"],
+        input[type="tel"],
+        input[type="email"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .delete-button {
+            background-color: #ff4d4d;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin-top: 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            width: 200px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .delete-button:hover {
+            background-color: #ff1a1a;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>User Profile</h1>
+    <form id="profile-form">
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required readonly>
+
+        <label for="contact_number">Contact Number:</label>
+        <input type="tel" id="contact_number" name="contact_number" required>
+
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required>
+
+        <button type="submit">Update Profile</button>
+    </form>
+
+    <button id="delete-account" class="delete-button">Delete My Account</button>
+
+    <script>
+        let currentUser;
+
+        async function loadUserProfile() {
+            try {
+                const response = await fetch('http://127.0.0.1:4001/auth/user', {
+                    credentials: "include"
+                });
+                const result = await response.json();
+                if (!result.ok || !result.payload) {
+                    throw new Error('Failed to load user profile');
+                }
+                currentUser = result.payload;
+                populateForm(currentUser);
+            } catch (error) {
+                console.error('Error loading user profile:', error);
+                alert('Failed to load user profile');
+                window.location.href = './index.html';
+            }
+        }
+
+        function populateForm(user) {
+            document.getElementById('username').value = user.username || '';
+            document.getElementById('contact_number').value = user.contact_number || '';
+            document.getElementById('email').value = user.email || '';
+        }
+
+        document.getElementById('profile-form').addEventListener('submit', async function (event) {
+            event.preventDefault();
+            const username = document.getElementById('username').value;
+            const contact_number = document.getElementById('contact_number').value;
+            const email = document.getElementById('email').value;
+            try {
+                const response = await fetch('http://127.0.0.1:4001/auth/user', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, contact_number }),
+                    credentials: "include"
+                });
+                const result = await response.json();
+                if (result.ok) {
+                    alert('Profile updated successfully');
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch (error) {
+                console.error('Error updating profile:', error);
+                alert(`Failed to update profile: ${error.message}`);
+            }
+        });
+
+        document.getElementById('delete-account').addEventListener('click', async function () {
+            if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+                await deleteUser(currentUser.username);
+            }
+        });
+
+        async function deleteUser(username) {
+            try {
+                const response = await fetch(`http://127.0.0.1:4001/auth/delete/user`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ username }),
+                    credentials: "include"
+                });
+                
+                const result = await response.json();
+                if (result.ok) {
+                    alert(`User "${username}" has been deleted successfully.`);
+                    window.location.href = './index.html';
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                alert(`Failed to delete user: ${error.message}`);
+            }
+        }
+
+        loadUserProfile();
+    </script>
+</body>
+
+
+</html>
